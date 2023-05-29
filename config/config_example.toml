@@ -1,0 +1,6 @@
+checkpoint = "MBZUAI/LaMini-GPT-124M"
+preprompt = "Below is an instruction that describes a task. Write a response that appropriately completes the request. \n\n### Instruction:\n{instruction}\n\n### Response:\n"
+text_generation_host = "127.0.0.1"
+port = "5000"
+telegram_bot_token = "token"
+slack_bot_token = "token"
