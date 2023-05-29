@@ -11,7 +11,7 @@ services:
     environment:
       - CHECKPOINT=MBZUAI/LaMini-Flan-T5-783M
       - PORT=5000
-      - PREPROMPT="Below is an instruction that describes a task. Write a response that appropriately completes the request. \n\n### Instruction:\n{instruction}\n\n### Response:\n"
+      - PREPROMPT=Below is an instruction that describes a task. Write a response that appropriately completes the request. \n\n### Instruction:\n{instruction}\n\n### Response:\n
     networks:
       - internal
 
@@ -23,7 +23,7 @@ services:
       - ./config:/app/config
       - ./telegram_bot:/app/telegram_bot
     environment:
-      - BOT_TOKEN=token
+      - TELEGRAM_BOT_TOKEN=token
       - PORT=5000
       - TEXT_GENERATION_HOST=text_generation_api
     networks:
