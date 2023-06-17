@@ -78,6 +78,16 @@ PORT="5000"
 TELEGRAM_BOT_TOKEN="token"
 ```
 
+### `slack_bot`
+The slack bot is still a work in progress. It hasn't been dockerized yet and still requires implementation of the voting system. Creating and setting up a slack bot can be tricky.
+
+You will need to get a token for your slack bot. Slack also requires a pretty good amount of set up for their API. You can find more information [here](https://api.slack.com/). It can be a bit confusing with permissions and scopes. Once you have that set up, you will need to do the following:
+1. You will need to publically connect your server to slack, you can use ngrok for example: `ngrok http port_number`
+2. Run the slack bot, you will need to run FastAPI, for example you can use uvicorn: `uvicorn slack_bot:app --port port_number --reload`
+3. Copy the ngrok URL and paste it into the slack bot settings in event subscriptions: `https://<ngrok_url>/slack/events`, verify and save the settings.
+
+It will work both for channels you invite the bot to and direct messages.
+
 ## LLMs and experiments
 ### License warning
 This repo's code is licensed under the Apache2 license, but some models used are licensed under the [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) license or may have other licenses. Please make sure you are allowed to use the models for your use case. 
