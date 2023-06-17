@@ -12,7 +12,7 @@ A fun project to learn about and use AI chatbots with LLMS. This project covers:
 1. Add your environment variables to the `docker-compose.yml` file:
 - `CHECKPOINT`: the model/checkpoint from Hugging Face to use for text generation. I have found that `MBZUAI/LaMini-GPT-124M` works pretty well. I wish I could run the larger `MBZUAI/LaMini-GPT-774M` model, but it is too large for my CPU to run in a reasonable amount of time.
 - `PREPROMPT`: the pre-prompt to use for the text generation. It is optional and can be left empty. I have found better results with decoder only models when using a prompt. This doesn't seem to be the case with encoder-decoder models.
-- `TEXT_GENERATION_HOST`: the host of `text_generation_api` to use.
+- `TEXT_GENERATION_HOST`:`text_generation_api` should be used for docker-compose.
 - `PORT`: the port of`text_generation_api` to use.
 - `TELEGRAM_BOT_TOKEN`: the token of the telegram bot to use.
 2. Run `docker-compose up` to start the `text_generation_api` and the `telegram_bot` together.
