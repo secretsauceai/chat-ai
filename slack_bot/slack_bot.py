@@ -10,6 +10,8 @@ import datetime
 import concurrent.futures
 import re
 
+import json
+
 # Read the bot token from environment variable or config file
 try:
     SLACK_BOT_TOKEN = os.environ['SLACK_BOT_TOKEN']
@@ -46,15 +48,51 @@ class Event(BaseModel):
     event_ts: str
     channel_type: str | None
 
-# Define executor (this line should be added before the function definition)
+# Define executor
 executor = concurrent.futures.ThreadPoolExecutor()
 
-# Create a new function to send a message
-def send_message(channel, text):
+def send_message(channel, text, response_id):
     try:
-        client.chat_postMessage(channel=channel, text=text)
+        blocks = [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": text
+                }
+            },
+            {
+                "type": "actions",
+                "block_id": f"vote:{response_id}",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "👍",
+                            "emoji": True
+                        },
+                        "value": "upvote",
+                        "action_id": "upvote_button"
+                    },
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "👎",
+                            "emoji": True
+                        },
+                        "value": "downvote",
+                        "action_id": "downvote_button"
+                    }
+                ]
+            }
+        ]
+        
+        client.chat_postMessage(channel=channel, text=text, blocks=blocks)
     except SlackApiError as e:
         print(f"Error sending message: {e.response['error']}")
+
 
 async def fetch_generated_text(session, url, payload, headers):
     print(f'{get_timestamp()} – Fetching response from LLM…')
@@ -62,18 +100,18 @@ async def fetch_generated_text(session, url, payload, headers):
         return await response.json()
 
 async def generate_text(event: Event):
-    input_prompt = re.sub(r'<@.*?>', '', event.get('text')).strip()  # Remove mention from input text
+    input_prompt = re.sub(r'<@.*?>', '', event.get('text')).strip()  
     channel_id = event.get('channel')
     headers = {'Content-type': 'application/json'}
-
     payload = {'input_prompt': input_prompt}
 
     async with aiohttp.ClientSession() as session:
         response = await fetch_generated_text(session, f'{SERVICE_URI}/generate_text', payload, headers)
         generated_text = response['generated_text']
+        response_id = response['response_id']  
         
     loop = asyncio.get_event_loop()
-    await loop.run_in_executor(executor, send_message, channel_id, generated_text)
+    await loop.run_in_executor(executor, send_message, channel_id, generated_text, response_id)
     print(f"{get_timestamp()} – Can't wait for response, returning immediately.")
     return '', 200
 
@@ -99,5 +137,37 @@ async def slack_events(request: Request):
                 print(f'{get_timestamp()} – Received {"instant message" if is_instant_message else "mention"}…')
                 if event.get('type') in ('message', 'app_mention'):
                     asyncio.create_task(generate_text(event))
+
+    return {"status": 200}
+
+@app.post("/slack/interactive")
+async def slack_interactive(request: Request):
+    result = await request.form()
+    payload = json.loads(result["payload"])
+    block_id = payload['actions']['block_id']
+    channel_id = payload['channel']['id']
+    actions = payload['actions']
+    # Extract the response_id from the callback_id field in the Slack payload
+    response_id = int(block_id.split(":")[1])
+    
+    # Determine the vote based on the button clicked
+    vote_value = None
+    for action in actions:
+        if action['value'] == 'upvote':
+            vote_value = 1
+        elif action['value'] == 'downvote':
+            vote_value = -1
+
+    # Now, make a request to the run_inference_api.py to update the vote
+    if vote_value:
+        async with aiohttp.ClientSession() as session:
+            payload = {
+                'vote': vote_value,
+                'response_id': response_id
+            }
+            headers = {'Content-type': 'application/json'}
+            
+            await session.post(f'{SERVICE_URI}/vote', json=payload, headers=headers)
+            client.chat_postMessage(channel=channel_id, text='Thanks for your vote!')
 
     return {"status": 200}
