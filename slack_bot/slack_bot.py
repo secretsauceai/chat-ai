@@ -144,7 +144,7 @@ async def slack_events(request: Request):
 async def slack_interactive(request: Request):
     result = await request.form()
     payload = json.loads(result["payload"])
-    block_id = payload['actions']['block_id']
+    block_id = payload['actions'][0]['block_id']
     channel_id = payload['channel']['id']
     actions = payload['actions']
     # Extract the response_id from the callback_id field in the Slack payload
